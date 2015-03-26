@@ -78,16 +78,19 @@ class NetEase:
         self.session = requests.Session()
         self.session.cookies['appver'] = '1.5.2'
 
-    def httpRequest(self, method, action, query=None, urlencoded=None, callback=None, timeout=None):
+    def httpRequest(self, method, action, query={}, urlencoded=None, callback=None, timeout=None, auth = False):
         connection = json.loads(self.rawHttpRequest(method, action, query, urlencoded, callback, timeout))
         return connection
 
-    def rawHttpRequest(self, method, action, query=None, urlencoded=None, callback=None, timeout=None):
-        if (method == 'GET'):
-            url = action if (query == None) else (action + '?' + query)
-            connection = self.session.get(url, headers=self.header, timeout=default_timeout)
+    def rawHttpRequest(self, method, action, query={}, urlencoded=None, callback=None, timeout=None, auth = False):
+        if auth:
+            query['MUSIC_U'] = self.session.cookies['MUSIC_U']
 
-        elif (method == 'POST'):
+        if method == 'GET':
+            url = action
+            connection = self.session.get(url, params=query, headers=self.header, timeout=default_timeout)
+
+        elif method == 'POST':
             connection = self.session.post(
                 action,
                 data=query,
@@ -129,9 +132,14 @@ class NetEase:
 
     # 用户歌单
     def user_playlist(self, uid, offset=0, limit=100):
-        action = 'http://music.163.com/api/user/playlist/?offset=' + str(offset) + '&limit=' + str(limit) + '&uid=' + str(uid)
+        action = 'http://music.163.com/api/user/playlist/'
+        query = {
+                'offset' : str(offset),
+                'limit': str(limit),
+                'uid': str(uid)
+                }
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['playlist']
         except:
             return []
@@ -150,18 +158,31 @@ class NetEase:
 
     # 新碟上架 http://music.163.com/#/discover/album/
     def new_albums(self, offset=0, limit=50):
-        action = 'http://music.163.com/api/album/new?area=ALL&offset=' + str(offset) + '&total=true&limit=' + str(limit)
+        action = 'http://music.163.com/api/album/new'
+        query = {
+                'area': 'ALL',
+                'offset': str(offset),
+                'total': 'true',
+                'limit': str(limit)
+                }
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['albums']
         except:
             return []
 
     # 歌单（网友精选碟） hot||new http://music.163.com/#/discover/playlist/
     def top_playlists(self, category='全部', order='hot', offset=0, limit=50):
-        action = 'http://music.163.com/api/playlist/list?cat=' + category + '&order=' + order + '&offset=' + str(offset) + '&total=' + ('true' if offset else 'false') + '&limit=' + str(limit)
+        action = 'http://music.163.com/api/playlist/list'
+        query = {
+                'cat': category,
+                'order': order,
+                'offset': str(offset),
+                'total': ('true' if offset else 'false'),
+                'limit': str(limit)
+                }
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['playlists']
         except:
             return []
@@ -181,18 +202,24 @@ class NetEase:
 
     # 歌单详情
     def playlist_detail(self, playlist_id):
-        action = 'http://music.163.com/api/playlist/detail?id=' + str(playlist_id)
+        action = 'http://music.163.com/api/playlist/detail'
+        query = {'id': str(playlist_id)}
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['result']['tracks']
         except:
             return []
 
     # 热门歌手 http://music.163.com/#/discover/artist/
     def top_artists(self, offset=0, limit=100):
-        action = 'http://music.163.com/api/artist/top?offset=' + str(offset) + '&total=false&limit=' + str(limit)
+        action = 'http://music.163.com/api/artist/top'
+        query = {
+                'offset': str(offset),
+                'total': 'false',
+                'limit': str(limit)
+                }
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['artists']
         except:
             return []
@@ -235,18 +262,24 @@ class NetEase:
         tmpids = ids[offset:]
         tmpids = tmpids[0:100]
         tmpids = map(str, tmpids)
-        action = 'http://music.163.com/api/song/detail?ids=[' + (',').join(tmpids) + ']'
+        action = 'http://music.163.com/api/song/detail'
+        query = {'ids': '[{0}]'.format(','.join(tmpids))}
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['songs']
         except:
             return []
 
     # song id --> song url ( details )
     def song_detail(self, music_id):
-        action = "http://music.163.com/api/song/detail/?id=" + str(music_id) + "&ids=[" + str(music_id) + "]"
+        action = "http://music.163.com/api/song/detail/"
+        query = {
+                'id': str(music_id),
+                'ids': '[{0}]'.format(str(music_id))
+                }
+
         try:
-            data = self.httpRequest('GET', action)
+            data = self.httpRequest('GET', action, query)
             return data['songs']
         except:
             return []
@@ -269,9 +302,10 @@ class NetEase:
     def channel_detail(self, channelids, offset=0):
         channels = []
         for i in range(0, len(channelids)):
-            action = 'http://music.163.com/api/dj/program/detail?id=' + str(channelids[i])
+            action = 'http://music.163.com/api/dj/program/detail'
+            query = {'id': str(channelids[i])}
             try:
-                data = self.httpRequest('GET', action)
+                data = self.httpRequest('GET', action, query)
                 channel = self.dig_info(data['program']['mainSong'], 'channels')
                 channels.append(channel)
             except:
