@@ -74,10 +74,9 @@ class NetEase:
             'Referer': 'http://music.163.com/search/',
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36'
         }
-        self.cookies = {
-            'appver': '1.5.2'
-        }
         self.playlist_class_dict = {}
+        self.session = requests.Session()
+        self.session.cookies['appver'] = '1.5.2'
 
     def httpRequest(self, method, action, query=None, urlencoded=None, callback=None, timeout=None):
         connection = json.loads(self.rawHttpRequest(method, action, query, urlencoded, callback, timeout))
@@ -86,10 +85,10 @@ class NetEase:
     def rawHttpRequest(self, method, action, query=None, urlencoded=None, callback=None, timeout=None):
         if (method == 'GET'):
             url = action if (query == None) else (action + '?' + query)
-            connection = requests.get(url, headers=self.header, timeout=default_timeout)
+            connection = self.session.get(url, headers=self.header, timeout=default_timeout)
 
         elif (method == 'POST'):
-            connection = requests.post(
+            connection = self.session.post(
                 action,
                 data=query,
                 headers=self.header,
