@@ -79,20 +79,24 @@ class NetEase:
         self.session.cookies['appver'] = '1.5.2'
 
     def httpRequest(self, method, action, query={}, urlencoded=None, callback=None, timeout=None, auth = False):
-        connection = json.loads(self.rawHttpRequest(method, action, query, urlencoded, callback, timeout))
+        connection = json.loads(self.rawHttpRequest(method, action, query, urlencoded, callback, timeout, auth))
         return connection
 
     def rawHttpRequest(self, method, action, query={}, urlencoded=None, callback=None, timeout=None, auth = False):
-        if auth:
-            query['MUSIC_U'] = self.session.cookies['MUSIC_U']
-
         if method == 'GET':
+            if auth:
+                query['csrf_token'] = self.session.cookies['__csrf']
             url = action
             connection = self.session.get(url, params=query, headers=self.header, timeout=default_timeout)
 
         elif method == 'POST':
+            if auth:
+                url_params = {'csrf_token': self.session.cookies['__csrf']}
+            else:
+                url_params = {}
             connection = self.session.post(
                 action,
+                params=url_params,
                 data=query,
                 headers=self.header,
                 timeout=default_timeout
